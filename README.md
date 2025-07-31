@@ -14,7 +14,7 @@ git clone https://github.com/vatsalramanuj/timetable_maker.git
 ### Step 2
 Open the folder location and install the requirements and run the `app.py` file.
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 python3 app.py
 ```
 
