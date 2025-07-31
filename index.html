@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Timetable Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            max-width: 900px;
+            width: 100%;
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        input[type="text"], input[type="date"], select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, select:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #357bd8;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e0;
+            transform: translateY(-1px);
+        }
+        .course-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+        .course-row input {
+            flex: 1;
+            min-width: 0; /* Allow inputs to shrink */
+        }
+        .course-row input:nth-child(2) { /* Course Name */
+            flex: 2; /* Make course name wider */
+        }
+        .remove-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .remove-btn:hover {
+            background-color: #dc2626;
+        }
+        .message-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            display: none; /* Hidden by default */
+        }
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .message-box.warning {
+            background-color: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4a90e2;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .course-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .course-row input {
+                width: 100%;
+            }
+            .remove-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">Generate Your Timetable</h1>
+
+        <form id="timetableForm">
+            <!-- <div class="form-group">
+                <label for="degree">Degree:</label>
+                <select id="degree" name="degree" class="block w-full">
+                    <option value="btech" selected>B.Tech</option>
+                    <option value="mtech">M.Tech</option>
+                </select>
+            </div> -->
+
+            <div class="form-group">
+                <label for="startDate">Semester Start Date (YYYY-MM-DD):</label>
+                <input type="date" id="startDate" name="startDate" value="2025-08-04" class="block w-full">
+            </div>
+
+            <div class="form-group">
+                <label for="numWeeks">Number of Recurrence Weeks:</label>
+                <input type="number" id="numWeeks" name="numWeeks" value="15" min="1" class="block w-full">
+            </div>
+
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 mt-6">Course Details</h2>
+            <div id="courseDetailsContainer">
+                <!-- Course rows will be added here by JavaScript -->
+            </div>
+            <button type="button" id="addCourseBtn" class="btn btn-secondary w-full mt-4">Add Another Course</button>
+
+            <button type="submit" class="btn btn-primary w-full mt-8" id="generateBtn">
+                Generate Timetable
+                <span class="loading-spinner" id="loadingSpinner"></span>
+            </button>
+        </form>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        const courseDetailsContainer = document.getElementById('courseDetailsContainer');
+        const addCourseBtn = document.getElementById('addCourseBtn');
+        const timetableForm = document.getElementById('timetableForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const messageBox = document.getElementById('messageBox');
+
+        let courseRowCount = 0;
+
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type}`;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 5000); // Hide after 5 seconds
+        }
+
+        function addCourseRow() {
+            courseRowCount++;
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'course-row';
+            rowDiv.id = `courseRow-${courseRowCount}`;
+
+            rowDiv.innerHTML = `
+                <input type="text" name="courseNo-${courseRowCount}" placeholder="Course No" required>
+                <input type="text" name="courseName-${courseRowCount}" placeholder="Course Name" required>
+                <input type="text" name="slot-${courseRowCount}" placeholder="Slot" required>
+                <input type="text" name="class-${courseRowCount}" placeholder="Classroom" required>
+                <button type="button" class="remove-btn" data-row-id="${courseRowCount}">X</button>
+            `;
+            courseDetailsContainer.appendChild(rowDiv);
+
+            // Add event listener for the new remove button
+            rowDiv.querySelector('.remove-btn').addEventListener('click', (event) => {
+                removeCourseRow(event.target.dataset.rowId);
+            });
+        }
+
+        function removeCourseRow(rowId) {
+            if (courseDetailsContainer.children.length === 1) {
+                showMessage("At least one course row must remain.", "warning");
+                return;
+            }
+            const rowToRemove = document.getElementById(`courseRow-${rowId}`);
+            if (rowToRemove) {
+                rowToRemove.remove();
+            }
+        }
+
+        // Initial course row
+        addCourseRow();
+
+        addCourseBtn.addEventListener('click', addCourseRow);
+
+        timetableForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            generateBtn.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            messageBox.style.display = 'none'; // Hide previous messages
+
+            const formData = new FormData(timetableForm);
+            const courses = [];
+            const courseData = {};
+
+            // Collect course data dynamically
+            for (let i = 1; i <= courseRowCount; i++) {
+                const courseNo = formData.get(`courseNo-${i}`);
+                const courseName = formData.get(`courseName-${i}`);
+                const slot = formData.get(`slot-${i}`);
+                const className = formData.get(`class-${i}`);
+
+                // Only add if all fields for a row are filled
+                if (courseNo && courseName && slot && className) {
+                    courses.push({
+                        courseNo: courseNo,
+                        courseName: courseName,
+                        slot: slot,
+                        class: className
+                    });
+                } else if (courseNo || courseName || slot || className) {
+                    // If some fields are filled but not all, warn the user
+                    showMessage(`Incomplete course row ${i}. Skipping.`, "warning");
+                }
+            }
+
+            if (courses.length === 0) {
+                showMessage("Please add at least one complete course.", "error");
+                generateBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+                return;
+            }
+
+            // courseData.degree = formData.get('degree');
+            courseData.startDate = formData.get('startDate');
+            courseData.numWeeks = formData.get('numWeeks');
+            courseData.courses = courses;
+
+            try {
+                const response = await fetch('/generate-timetable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(courseData)
+                });
+
+                if (response.ok) {
+                    // If successful, trigger file download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'timetable.ics'; // Filename for download
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    showMessage("Timetable generated successfully! Your ICS file is downloading.", "success");
+                } else {
+                    const errorText = await response.text();
+                    showMessage(`Error generating timetable: ${errorText}`, "error");
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showMessage(`Network error or server unavailable: ${error.message}`, "error");
+            } finally {
+                generateBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
